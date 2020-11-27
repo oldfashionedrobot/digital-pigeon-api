@@ -61,7 +61,8 @@ const createPigeons = `
     owner_id int,
     current_user_id int,
     name varchar(100),
-    variant int
+    variant int,
+    message_id int
   );
 `;
 
