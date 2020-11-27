@@ -11,7 +11,7 @@ client.connect();
 // app.use(express.static('assets'))
 app.use(function (req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  // res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT');
   res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Content-Type', 'application/json');
   next();
@@ -67,6 +67,16 @@ app.get('/pigeons/:pigeonId', async (req, res) => {
   }
 });
 
+app.put('/pigeons/:pigeonId/read', async (req, res) => {
+  try {
+    const result = await client.query(`UPDATE pigeons SET message_id = NULL WHERE id = ${req.params['pigeonId']}`);
+    const results = { 'data': (result) ? result.rows : null };
+    res.status(200).send(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error " + err);
+  }
+});
 
 app.get('/pigeons/user/:userId', async (req, res) => {
   try {
@@ -100,14 +110,16 @@ app.post('/send-message', async (req, res) => {
     const result = await client.query(`SELECT owner_id, current_user_id FROM pigeons WHERE id = ${pigeonId}`);
     const ownerId = result.rows[0]['owner_id'];
     const currentUserId = result.rows[0]['current_user_id'];
-    const result2 = await client.query(`UPDATE pigeons SET current_user_id = ${ownerId} WHERE id = ${pigeonId};`);
 
     const msgResult = await client.query(`
       INSERT INTO messages (from_id, to_id, pigeon_id, message)
-      VALUES (${currentUserId}, ${ownerId}, ${pigeonId}, '${message}');
+      VALUES (${currentUserId}, ${ownerId}, ${pigeonId}, '${message}')
+      RETURNING id;
     `);
 
-    const resp = { 'data': (result) ? result.rows : null };
+    const result2 = await client.query(`UPDATE pigeons SET current_user_id = ${ownerId}, message_id = ${msgResult.rows[0].id} WHERE id = ${pigeonId};`);
+
+    const resp = { 'data': (msgResult) ? msgResult.rows : null };
 
     res.status(200).send(resp);
   } catch (err) {
