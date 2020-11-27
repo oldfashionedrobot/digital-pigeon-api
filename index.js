@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 
 app.get('/users', async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM users');
+    const result = await client.query('SELECT * FROM users;');
     const results = { 'data': (result) ? result.rows : null };
     res.status(200).send(results);
   } catch (err) {
@@ -36,7 +36,7 @@ app.get('/users', async (req, res) => {
 
 app.get('/users/:userId', async (req, res) => {
   try {
-    const result = await client.query(`SELECT * FROM users WHERE id = ${req.params['userId']}`);
+    const result = await client.query(`SELECT * FROM users WHERE id = ${req.params['userId']};`);
     const results = { 'data': (result) ? result.rows : null };
     res.status(200).send(results);
   } catch (err) {
@@ -47,7 +47,7 @@ app.get('/users/:userId', async (req, res) => {
 
 app.get('/pigeons', async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM pigeons ORDER BY name ASC');
+    const result = await client.query('SELECT * FROM pigeons ORDER BY name ASC;');
     const results = { 'data': (result) ? result.rows : null };
     res.status(200).send(results);
   } catch (err) {
@@ -58,18 +58,7 @@ app.get('/pigeons', async (req, res) => {
 
 app.get('/pigeons/:pigeonId', async (req, res) => {
   try {
-    const result = await client.query(`SELECT * FROM pigeons WHERE id = ${req.params['pigeonId']}`);
-    const results = { 'data': (result) ? result.rows : null };
-    res.status(200).send(results);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error " + err);
-  }
-});
-
-app.put('/pigeons/:pigeonId/read', async (req, res) => {
-  try {
-    const result = await client.query(`UPDATE pigeons SET message_id = NULL WHERE id = ${req.params['pigeonId']}`);
+    const result = await client.query(`SELECT * FROM pigeons WHERE id = ${req.params['pigeonId']};`);
     const results = { 'data': (result) ? result.rows : null };
     res.status(200).send(results);
   } catch (err) {
@@ -80,7 +69,7 @@ app.put('/pigeons/:pigeonId/read', async (req, res) => {
 
 app.get('/pigeons/user/:userId', async (req, res) => {
   try {
-    const result = await client.query(`SELECT * FROM pigeons WHERE current_user_id = ${req.params['userId']} ORDER BY name ASC`);
+    const result = await client.query(`SELECT * FROM pigeons WHERE current_user_id = ${req.params['userId']} ORDER BY name ASC;`);
     const results = { 'data': (result) ? result.rows : null };
     res.status(200).send(results);
   } catch (err) {
@@ -107,7 +96,7 @@ app.post('/send-message', async (req, res) => {
     const pigeonId = req.body['pigeonId'];
     const message = req.body['message'];
 
-    const result = await client.query(`SELECT owner_id, current_user_id FROM pigeons WHERE id = ${pigeonId}`);
+    const result = await client.query(`SELECT owner_id, current_user_id FROM pigeons WHERE id = ${pigeonId};`);
     const ownerId = result.rows[0]['owner_id'];
     const currentUserId = result.rows[0]['current_user_id'];
 
@@ -130,7 +119,7 @@ app.post('/send-message', async (req, res) => {
 
 app.get('/messages', async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM messages ORDER BY created_at DESC');
+    const result = await client.query('SELECT * FROM messages ORDER BY created_at DESC;');
     const results = { 'data': (result) ? result.rows : null };
     res.status(200).send(results);
   } catch (err) {
@@ -141,7 +130,19 @@ app.get('/messages', async (req, res) => {
 
 app.get('/messages/:messageId', async (req, res) => {
   try {
-    const result = await client.query(`SELECT * FROM messages WHERE id = ${req.params['messageId']}`);
+    const result = await client.query(`SELECT * FROM messages WHERE id = ${req.params['messageId']};`);
+    const results = { 'data': (result) ? result.rows : null };
+    res.status(200).send(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error " + err);
+  }
+});
+
+app.put('/messages/:messageId/read', async (req, res) => {
+  try {
+    const message = await client.query(`UPDATE messages SET archived = TRUE WHERE id = ${req.params['messageId']} RETURNING pigeon_id;`)
+    const result = await client.query(`UPDATE pigeons SET message_id = NULL WHERE id = ${message.rows[0].pigeon_id};`);
     const results = { 'data': (result) ? result.rows : null };
     res.status(200).send(results);
   } catch (err) {
@@ -152,7 +153,7 @@ app.get('/messages/:messageId', async (req, res) => {
 
 app.get('/messages/user/:userId', async (req, res) => {
   try {
-    const result = await client.query(`SELECT * FROM messages WHERE to_id = ${req.params['userId']} ORDER BY created_at DESC`);
+    const result = await client.query(`SELECT * FROM messages WHERE to_id = ${req.params['userId']} AND archived = TRUE ORDER BY created_at DESC;`);
     const results = { 'data': (result) ? result.rows : null };
     res.status(200).send(results);
   } catch (err) {

@@ -40,7 +40,8 @@ const createMessages = `
     from_id int,
     to_id int,
     pigeon_id int,
-    message text
+    message text,
+    archived boolean DEFAULT FALSE
   );
 `;
 
