@@ -1,8 +1,9 @@
 require('dotenv').config();
-var { uniqueNamesGenerator, Config, starWars } = require('unique-names-generator');
+const { uniqueNamesGenerator, Config, names } = require('unique-names-generator');
+const txtgen = require('txtgen');
 
 const nameGenConfig = {
-  dictionaries: [starWars]
+  dictionaries: [names]
 }
 
 var { Client } = require('pg');
@@ -24,12 +25,12 @@ const createUsers = `
 const seedUsers = `
   INSERT INTO users (username, email) 
   VALUES 
-  ('Billy', 'billy@butcher.com'),
-  ('Marvin', 'marvin@milk.com'),
-  ('Serge', 'serge@frenchie.com'),
-  ('Kimiko', 'kimiko@thefemale.com'),
-  ('Hughie', 'hughie@campbell.com'),
-  ('Annie', 'annie@january.com');
+  ('Billy', 'billy@hotmail.com'),
+  ('Marvin', 'marvin@yahoo.com'),
+  ('Serge', 'serge@gmail.com'),
+  ('Kimiko', 'kimiko@aol.com'),
+  ('Hughie', 'hughie@gmail.com'),
+  ('Annie', 'annie@gmail.com');
 `;
 
 const createMessages = `
@@ -46,13 +47,13 @@ const createMessages = `
 `;
 
 const seedMessages = `
-    INSERT INTO messages (from_id, to_id, pigeon_id, message)
+    INSERT INTO messages (from_id, to_id, pigeon_id, message, archived)
     VALUES
-    (4, 1, 12, 'fjlkdsjflskdjf lkf lkf djslkf jldkf s'),
-    (2, 1, 3, ';jkjlkjk;lklkjhljlkjkljlkjlkjk'),
-    (5, 1, 27, 'blueberry blueberry blueberry'),
-    (5, 2, 27, 'bready bready bready'),
-    (5, 4, 27, 'candycanes candycanes candycanes');
+    (4, 1, 2, '${txtgen.sentence()}', false),
+    (2, 1, 3, '${txtgen.sentence()}', false),
+    (5, 1, 4, '${txtgen.sentence()}', false),
+    (5, 2, 27, '${txtgen.sentence()}', true),
+    (5, 4, 27, '${txtgen.sentence()}', true);
 `;
 
 const createPigeons = `
@@ -68,20 +69,31 @@ const createPigeons = `
 `;
 
 const pigeonVals = [1, 2, 3, 4, 5, 6].map(userId => {
-  return Array(5).fill().map((_) => {
+  let messageId = null;
+
+
+  return Array(5).fill().map((_, idx) => {
+    if (userId === 1 && (idx >= 1 && idx <= 3)) {
+      messageId = idx;
+    } else {
+      messageId = 'NULL';
+    }
     return {
       ownerId: userId,
       currentUserId: userId,
       name: uniqueNamesGenerator(nameGenConfig),
-      variant: Math.floor(Math.random() * Math.floor(9))
+      variant: Math.floor(Math.random() * Math.floor(9)),
+      messageId
     }
   });
-}).flat().map(p => `(${p.ownerId}, ${Math.random() > 0.66 ? 1 : p.currentUserId}, '${p.name}', ${p.variant})`).join(',');
+}).flat().map(p => `(${p.ownerId}, ${Math.random() > 0.66 ? 1 : p.currentUserId}, '${p.name}', ${p.variant}, ${p.messageId})`).join(',');
 
 const seedPigeons = `
-  INSERT INTO pigeons (owner_id, current_user_id, name, variant)
+  INSERT INTO pigeons (owner_id, current_user_id, name, variant, message_id)
   VALUES ${pigeonVals};
 `;
+
+console.log(seedPigeons);
 
 run().then(r => process.exit());
 
