@@ -5,7 +5,19 @@ var app = express();
 var http = require('http').createServer(app);
 var { Client } = require('pg');
 
-const client = new Client();
+let client;
+
+if (process.env.DATABASE_URL) {
+  client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
+} else {
+  client = new Client();
+}
+
 client.connect();
 
 // app.use(express.static('assets'))
